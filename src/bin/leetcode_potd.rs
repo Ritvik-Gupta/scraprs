@@ -1,9 +1,18 @@
+use chrono::Utc;
+use std::path::Path;
 use thirtyfour::{
     prelude::{ElementQueryable, ElementWaitable, WebDriverResult},
     By, ChromeCapabilities, WebDriver, WebElement,
 };
 
 static LEETCODE_DOMAIN: &str = "https://leetcode.com";
+
+lazy_static::lazy_static! {
+    static ref OUTPUT_PATH: String = {
+        let path = std::env::args().collect::<Vec<_>>()[1].clone();
+        Path::new(&path).exists().then(|| path).expect("for output path to exist")
+    };
+}
 
 #[derive(serde::Serialize)]
 struct PotdInfo {
@@ -136,21 +145,21 @@ async fn scraping(driver: &WebDriver) -> WebDriverResult<()> {
 
     let potd_info = scrape_potd(first_problem).await?;
 
-    // Create TOML structure for PotdInfo
-    let toml_table = toml::Table::from_iter(
-        [(
-            "potd".to_string(),
-            toml::Value::Table(
-                toml::to_string_pretty(&potd_info)
-                    .expect("to serialize properly")
-                    .parse::<toml::Table>()
-                    .unwrap(),
-            ),
-        )]
-        .into_iter(),
+    let mut toml_table = toml::to_string_pretty(&potd_info)
+        .expect("to serialize properly")
+        .parse::<toml::Table>()
+        .unwrap();
+    toml_table.insert(
+        "date".to_string(),
+        toml::Value::String(Utc::now().format("%Y%m%d").to_string()),
     );
 
-    println!("{}", toml_table);
+    // Create TOML structure for PotdInfo
+    let toml_table =
+        toml::Table::from_iter([("potd".to_string(), toml::Value::Table(toml_table))].into_iter());
+
+    std::fs::write(OUTPUT_PATH.to_string(), toml_table.to_string())
+        .expect("to write to toml file successfully");
 
     Ok(())
 }
