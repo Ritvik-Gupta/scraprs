@@ -104,10 +104,7 @@ async fn scraping(driver: &WebDriver) -> WebDriverResult<()> {
             table
         }
         // Unlikely case when Table has been loaded before query
-        Err(_) => {
-            println!("Yes");
-            driver.find(By::Css("div:has(div[role='table'])")).await?
-        }
+        Err(_) => driver.find(By::Css("div:has(div[role='table'])")).await?,
     };
 
     assert!(!table
