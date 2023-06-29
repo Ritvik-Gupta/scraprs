@@ -1,4 +1,5 @@
 use chrono::Utc;
+use once_cell::sync::Lazy;
 use std::path::Path;
 use thirtyfour::{
     prelude::{ElementQueryable, ElementWaitable, WebDriverResult},
@@ -7,12 +8,13 @@ use thirtyfour::{
 
 static LEETCODE_DOMAIN: &str = "https://leetcode.com";
 
-lazy_static::lazy_static! {
-    static ref OUTPUT_PATH: String = {
-        let path = std::env::args().collect::<Vec<_>>()[1].clone();
-        Path::new(&path).exists().then(|| path).expect("for output path to exist")
-    };
-}
+static OUTPUT_PATH: Lazy<String> = Lazy::new(|| {
+    let path = std::env::args().collect::<Vec<_>>()[1].clone();
+    Path::new(&path)
+        .exists()
+        .then(|| path)
+        .expect("for output path to exist")
+});
 
 #[derive(serde::Serialize)]
 struct PotdInfo {
