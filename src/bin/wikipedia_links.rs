@@ -3,8 +3,9 @@ Wikipedia page scraper for fetching all relevant links and connected wiki pages.
 The script uses relative wiki paths, as connected page links are also relative.
 
 Usage :
+
     - ./target/release/wikipedia_links "/wiki/Rust_(programming_language)"
-!*/
+*/
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -17,7 +18,8 @@ use std::error::Error;
 static BASE_WIKI_URL: &str = "https://en.wikipedia.org";
 
 // Wikipedia reguar expression which can be used to match and filter wiki links
-static WIKI_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("^/wiki/(?P<name>[^\"]+)$").unwrap());
+static WIKI_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new("^/wiki/(?P<name>[^\"]+)$").expect("To be a valid regex"));
 
 /**
 Utility function that is used to fetch the wiki page html document and filter out the relevant links.
@@ -33,14 +35,23 @@ fn fetch_wiki_links(url_ref: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let html = reqwest::blocking::get(format!("{BASE_WIKI_URL}{url_ref}"))?.text()?;
     let document = Html::parse_document(&html);
 
+    // Find the main content div
     let content_div = document
-        .select(&Selector::parse("div#bodyContent").unwrap())
+        .select(&Selector::parse("div#bodyContent")?)
         .next()
-        .unwrap();
+        .expect("Should have the main content div");
 
+    // All the relevant content is inside the paragraphs
+    // and so we fetch all the anchors from it and extract their 'href' links
     let links = content_div
-        .select(&Selector::parse("p a[href]").unwrap())
-        .map(|link_tag| link_tag.value().attr("href").unwrap().to_string())
+        .select(&Selector::parse("p a[href]")?)
+        .map(|link_tag| {
+            link_tag
+                .value()
+                .attr("href")
+                .expect("Every anchor tag must have a 'href' attribute")
+                .to_string()
+        })
         .filter(|link| WIKI_REGEX.is_match(link))
         .collect();
 
