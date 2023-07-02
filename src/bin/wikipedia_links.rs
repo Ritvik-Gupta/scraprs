@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .expect("Relative wiki page path must be provided");
 
     let link_records = fetch_wiki_links(&wiki_url_ref)?;
-    println!("{:?}", link_records);
+    println!("{:#?}", link_records);
 
     Ok(())
 }
